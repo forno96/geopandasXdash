@@ -10,7 +10,8 @@ import plotly.graph_objects as go
 import plotly.express as px
 import geopandas as gpd
 import pandas as pd
-import dash, sys, json, requests, humanize
+from numerize.numerize import numerize
+import dash, sys, json, requests
 
 # load geojson
 italy_regions_url = "https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson"
@@ -23,7 +24,7 @@ italy_regions = gpd.GeoDataFrame.from_features(italy_regions["features"])
 vaccine_data_url = "https://raw.githubusercontent.com/italia/covid19-opendata-vaccini/master/dati/somministrazioni-vaccini-summary-latest.csv"
 df = pd.read_csv(vaccine_data_url)
 lasDate = df['data_somministrazione'].max()
-df = df.groupby(['codice_regione_ISTAT', 'nome_area'], as_index=False)[['totale', 'sesso_maschile', 'sesso_femminile', 'prima_dose', 'seconda_dose', 'categoria_operatori_sanitari_sociosanitari', 'categoria_personale_non_sanitario', 'categoria_ospiti_rsa', 'categoria_personale_scolastico', 'categoria_60_69', 'categoria_over80', 'categoria_soggetti_fragili', 'categoria_forze_armate', 'categoria_altro']].agg('sum')
+df = df.groupby(['codice_regione_ISTAT', 'nome_area'], as_index=False)[['totale', 'sesso_maschile', 'sesso_femminile', 'prima_dose', 'seconda_dose', 'categoria_operatori_sanitari_sociosanitari', 'categoria_personale_non_sanitario', 'categoria_ospiti_rsa', 'categoria_personale_scolastico', 'categoria_60_69', 'categoria_70_79', 'categoria_over80', 'categoria_soggetti_fragili', 'categoria_forze_armate', 'categoria_altro']].agg('sum')
 
 # get italian population
 pi = pd.read_csv("italian_population.csv")
@@ -33,16 +34,16 @@ pi.drop('sesso', axis='columns', inplace=True)
 # mix the 3
 df = df.merge(pi, on="codice_regione_ISTAT")
 geo_df = italy_regions.merge(df, on="codice_regione_ISTAT").set_index("reg_name")
-geo_df["area"] = round(geo_df.area * 10, 2)
 
 # generate density
-geo_df["densita"] = round(geo_df.totale_abitanti/geo_df.area, 2)
-
-
+geo_df["area"] = round(geo_df.area * 10000, 0)
+geo_df["densita"] = round(geo_df.totale_abitanti/geo_df["area"], 0)
+geo_df["perc_vac"] = round((100*geo_df["totale"])/geo_df["totale_abitanti"], 2)
 
 external_stylesheets = [
     { 'href': 'https://cdn.jsdelivr.net/npm/bulma@0.9.2/css/bulma-rtl.min.css',                     'rel': 'stylesheet' },
     { 'href': 'https://cdn.jsdelivr.net/npm/bulma-divider@0.2.0/dist/css/bulma-divider.min.css',    'rel': 'stylesheet' },
+    { 'href': 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css',         'rel': 'stylesheet' },
     { 'href': 'static/custom.css',                                                                  'rel': 'stylesheet' }
 ]
 
@@ -63,6 +64,7 @@ field2show = [
     {'label': 'Categoria Ospiti RSA', 'value': "categoria_ospiti_rsa"},
     {'label': 'Categoria Personale Scolastico', 'value': "categoria_personale_scolastico"},
     {'label': 'Categoria 60/69', 'value': "categoria_60_69"},
+    {'label': 'Categoria 70/79', 'value': "categoria_70_79"},
     {'label': 'Categoria Over 80', 'value': "categoria_over80"},
     {'label': 'Categoria Soggetti Fragili', 'value': "categoria_soggetti_fragili"},
     {'label': 'Categoria Forze Armate', 'value': "categoria_forze_armate"},
@@ -87,36 +89,25 @@ app.layout = html.Div([
                             dcc.Dropdown(
                                 id = 'field2showMap1', clearable=False,
                                 options = field2show,
-                                value = 'totale'
+                                value = field2show[0]['value']
                             ),
+
                             html.Br(),
                             html.P(["Field for Map2"], className="is-size-6 has-text-grey-light has-text-left"),
                             dcc.Dropdown(
                                 id = 'field2showMap2', clearable=False,
                                 options = field2show,
-                                value = 'totale'
+                                value = field2show[1]['value']
                             ),
+
                             html.Br(),
                             html.P(["Max Km square"], className="is-size-6 has-text-grey-light has-text-left"),
-                            dcc.Slider(
-                                id = "max_square_km",
-                                className="slider",
-                                step=0.01
-                            ),
+                            dcc.Slider(id = "max_square_km"),
+
                             html.Br(),
                             html.P(["Max Density"], className="is-size-6 has-text-grey-light has-text-left"),
-                            dcc.Slider(
-                                id = "max_density",
-                                className="slider",
-                                step=0.01
-                            )
-                        ]),
-                        html.Div([
-                            html.Div([
-                                html.P(["Max Km Square"], className="is-size-7 has-text-grey-light"),
-                                html.P([0], className="is-size-4 has-text-info has-text-weight-bold", id="display_max_square_km")
-                            ])
-                        ], style={"position": "absolute", "bottom": "0.3rem", "width": "100%"})
+                            dcc.Slider(id = "max_density")
+                        ])
                     ], className="column is-3", style={"position": "relative"}),
                     html.Div(className="is-divider-vertical px-3"),
                     html.Div([
@@ -135,10 +126,20 @@ app.layout = html.Div([
                         )
                     ], className="column")
                 ], className="columns is-gapless"),
-                html.P([
-                    html.Span(["Last update "]),
-                    html.Span([lasDate], className="has-text-info has-text-weight-bold")
-                ])
+                html.Div(className="is-divider my-3"),
+                html.Div([
+                    html.Div([
+                        html.P([_[0]], className="is-size-7 has-text-grey-light"),
+                        html.P([_[1]], className="is-size-4 has-text-info has-text-weight-bold", id=_[2])
+                    ], className="column")
+                    for _ in [
+                        ("Max Km Square",0, "display_max_square_km"),
+                        ("Max Density of Abitants/Km Square", 0, "display_max_density"),
+                        ("Total vaccinated", numerize(int(geo_df["totale"].sum())), ""),
+                        ("Percent Vacinnated", f'{round((100*int(geo_df["totale"].sum()))/int(geo_df["totale_abitanti"].sum()), 2)}%', ""),
+                        ("Last update", lasDate, "")
+                    ]
+                ], className="columns")
             ], className="box"),
             dcc.Markdown('''
                 Example of code
@@ -174,15 +175,7 @@ app.layout = html.Div([
     Input('hidden', 'children')
 )
 def loadMaxSquareKM(hidden):
-    max = geo_df["area"].max()
-    min = geo_df["area"].min()
-    marks={
-        min: str(min),
-        max: str(max)
-    }
-    value=max
-
-    return marks, min, max, value
+    return loadSlider("area", "km^2")
 
 @app.callback(
     Output('max_density', 'marks'),
@@ -192,15 +185,7 @@ def loadMaxSquareKM(hidden):
     Input('hidden', 'children')
 )
 def loadMaxSquareKM(hidden):
-    max = geo_df["densita"].max()
-    min = geo_df["densita"].min()
-    marks={
-        min: f"{humanize.intword(min)}/km^2",
-        max: f"{humanize.intword(max)}/km^2"
-    }
-    value=max
-
-    return marks, min, max, value
+    return loadSlider("densita", "ab/km^2")
 
 @app.callback(
     Output('display_max_square_km', 'children'),
@@ -208,7 +193,15 @@ def loadMaxSquareKM(hidden):
     prevent_initial_call=True
 )
 def diplayOnGauge(maxSquareKm):
-    return maxSquareKm
+    return numerize(maxSquareKm)
+
+@app.callback(
+    Output('display_max_density', 'children'),
+    Input('max_density', 'value'),
+    prevent_initial_call=True
+)
+def diplayOnGauge(maxDensity):
+    return numerize(maxDensity)
 
 @app.callback(
     Output('map1', 'figure'),
@@ -229,8 +222,19 @@ def displayMap1(field, maxSquareKm, maxDensity):
 def displayMap2(field, maxSquareKm, maxDensity):
     return diplayMap(field, maxSquareKm, maxDensity)
 
+#/km^2
+def loadSlider(field, measure):
+    max = int(geo_df[field].max())
+    min = int(geo_df[field].min())
+    marks={
+        min: f"{numerize(min)} {measure}",
+        max: f"{numerize(max)} {measure}"
+    }
+    value=max
+    return marks, min, max, value
+
 def diplayMap(field, maxSquareKm, maxDensity):
-    hover_data = list(set(['area', 'totale', 'densita', field]))
+    hover_data = list(set(['area', 'totale', 'densita', 'perc_vac', field]))
 
     mask = (geo_df['area'] <= maxSquareKm) & (geo_df['densita'] <= maxDensity)
     tmp = geo_df.loc[mask]
@@ -241,10 +245,11 @@ def diplayMap(field, maxSquareKm, maxDensity):
         locations=tmp.index,
         hover_data=hover_data,
         color=field,
-        color_continuous_scale=px.colors.sequential.Bluyl,
+        color_continuous_scale=px.colors.sequential.GnBu,
         opacity=0.5,
         center={"lat": 41.8719, "lon": 12.5694}, zoom=4,
-        mapbox_style="carto-positron"
+        mapbox_style="carto-positron",
+        labels={'area':'Area', 'densita':'Densità', 'perc_vac': 'Percentuale vaccinati','reg_name': 'Nome regione', 'totale': 'Totale', 'prima_dose': 'Prima dose', 'seconda_dose': 'Seconda dose', 'sesso_maschile': 'Sesso maschile', 'sesso_femminile': 'Sesso femminile', 'categoria_operatori_sanitari_sociosanitari': 'Operatori sanitari', 'categoria_personale_non_sanitario': 'Personale non sanitario', 'categoria_ospiti_rsa': 'Ospiti rsa', 'categoria_personale_scolastico': 'Personale scolastico', 'categoria_60_69': '60/69', 'categoria_over80': 'Over 80', 'categoria_soggetti_fragili': 'Soggetti fragili', 'categoria_forze_armate': 'Forze armate', 'categoria_altro': 'Altro'}
     )
     fig.update_layout(margin=dict(b=0,t=40,l=0,r=0))
 

@@ -3,10 +3,11 @@ html {
   overflow-y: overlay;
 }
 
-.slider{
-  padding: 0px 0.4em 25px !important;
-}
-
 .maxWidth {
     width: 100%;
 }
+/*
+.slider{
+  padding: 0px 0.4em 25px !important;
+}
+*/
