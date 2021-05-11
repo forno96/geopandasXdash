@@ -163,7 +163,19 @@ app.layout = html.Div([
                 ```
             ''', className="has-text-left")
         ], className="container has-text-centered maxWidth")
-    ], className="hero-body")
+    ], className="hero-body"),
+    html.Footer([
+        html.Div([
+            html.A([html.Span([html.I([], className=_[2])], className="icon"), f" {_[0]}"], href=_[1], className="column")
+            for _ in [
+                ("Css by Bulma", "https://bulma.io", "fab fa-css3-alt has-text-primary"),
+                ("Icons by FontAwesome", "https://fontawesome.com/", "fab fa-font-awesome has-text-info"),
+                ("Vaccine data", "https://github.com/italia/covid19-opendata-vaccini", "fas fa-syringe has-text-success"),
+                ("Italy map", "https://github.com/openpolis/geojson-italy", "fas fa-map has-text-warning"),
+                ("People data", "http://dati.istat.it/Index.aspx?DataSetCode=DCIS_POPRES1", "fas fa-users has-text-danger")
+            ]
+        ], className="content has-text-centered columns is-centered")
+    ], className="footer")
 ], className="hero is-light is-fullheight")
 
 
