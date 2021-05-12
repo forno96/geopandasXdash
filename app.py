@@ -84,8 +84,8 @@ app.layout = html.Div([
                 html.Div([
                     html.Div([
                         html.Div([
-                            html.P(["Selectors"], className="is-size-4 mb-4"),
-                            html.P(["Field for Map1"], className="is-size-6 has-text-grey-light has-text-left"),
+                            html.P([html.Span([html.I([], className="fas fa-clipboard-list")], className="icon has-text-info"), " Selectors"], className="is-size-4 mb-4"),
+                            html.P([html.Span([html.I([], className="fas fa-map")], className="icon has-text-primary"), " Field for Map1"], className="is-size-6 has-text-grey-light has-text-left"),
                             dcc.Dropdown(
                                 id = 'field2showMap1', clearable=False,
                                 options = field2show,
@@ -93,7 +93,7 @@ app.layout = html.Div([
                             ),
 
                             html.Br(),
-                            html.P(["Field for Map2"], className="is-size-6 has-text-grey-light has-text-left"),
+                            html.P([html.Span([html.I([], className="fas fa-map")], className="icon has-text-primary-dark"), " Field for Map2"], className="is-size-6 has-text-grey-light has-text-left"),
                             dcc.Dropdown(
                                 id = 'field2showMap2', clearable=False,
                                 options = field2show,
@@ -101,17 +101,17 @@ app.layout = html.Div([
                             ),
 
                             html.Br(),
-                            html.P(["Max Km square"], className="is-size-6 has-text-grey-light has-text-left"),
+                            html.P([html.Span([html.I([], className="fas fa-ruler")], className="icon"), " Max Km square"], className="is-size-6 has-text-grey-light has-text-left"),
                             dcc.Slider(id = "max_square_km"),
 
                             html.Br(),
-                            html.P(["Max Density"], className="is-size-6 has-text-grey-light has-text-left"),
+                            html.P([html.Span([html.I([], className="fas fa-users")], className="icon"), " Max Density"], className="is-size-6 has-text-grey-light has-text-left"),
                             dcc.Slider(id = "max_density")
                         ])
                     ], className="column is-3", style={"position": "relative"}),
                     html.Div(className="is-divider-vertical px-3"),
                     html.Div([
-                        html.P(["Map 1"], className="is-size-4"),
+                        html.P([html.Span([html.I([], className="fas fa-map")], className="icon has-text-primary"), " Map 1"], className="is-size-4"),
                         dcc.Loading(
                             type="circle",
                             children=html.Div([dcc.Graph(id="map1")], style={"minHeight":"300px"})
@@ -119,7 +119,7 @@ app.layout = html.Div([
                     ], className="column"),
                     html.Div(className="is-divider-vertical px-3"),
                     html.Div([
-                        html.P(["Map 2"], className="is-size-4"),
+                        html.P([html.Span([html.I([], className="fas fa-map")], className="icon has-text-primary-dark"), "  Map 2"], className="is-size-4"),
                         dcc.Loading(
                             type="circle",
                             children=html.Div([dcc.Graph(id="map2")], style={"minHeight":"300px"})
@@ -129,15 +129,15 @@ app.layout = html.Div([
                 html.Div(className="is-divider my-3"),
                 html.Div([
                     html.Div([
-                        html.P([_[0]], className="is-size-7 has-text-grey-light"),
+                        html.P([html.Span([html.I([], className=_[3])], className="icon"), f" {_[0]}"], className="is-size-7 has-text-grey-light"),
                         html.P([_[1]], className="is-size-4 has-text-info has-text-weight-bold", id=_[2])
                     ], className="column")
                     for _ in [
-                        ("Max Km Square",0, "display_max_square_km"),
-                        ("Max Density of Abitants/Km Square", 0, "display_max_density"),
-                        ("Total vaccinated", numerize(int(geo_df["totale"].sum())), ""),
-                        ("Percent Vacinnated", f'{round((100*int(geo_df["totale"].sum()))/int(geo_df["totale_abitanti"].sum()), 2)}%', ""),
-                        ("Last update", lasDate, "")
+                        ("Max Km Square",0, "display_max_square_km", "fas fa-ruler"),
+                        ("Max Density of Abitants/Km Square", 0, "display_max_density", "fas fa-users"),
+                        ("Total vaccinated", numerize(int(geo_df["totale"].sum())), "", "fas fa-syringe"),
+                        ("Percent Vacinnated", f'{round((100*int(geo_df["totale"].sum()))/int(geo_df["totale_abitanti"].sum()), 2)}%', "", "fas fa-percentage"),
+                        ("Last update", lasDate, "", "far fa-calendar-alt")
                     ]
                 ], className="columns")
             ], className="box"),
