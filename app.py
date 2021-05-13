@@ -26,19 +26,22 @@ df = pd.read_csv(vaccine_data_url)
 lasDate = df['data_somministrazione'].max()
 df = df.groupby(['codice_regione_ISTAT', 'nome_area'], as_index=False)[['totale', 'sesso_maschile', 'sesso_femminile', 'prima_dose', 'seconda_dose', 'categoria_operatori_sanitari_sociosanitari', 'categoria_personale_non_sanitario', 'categoria_ospiti_rsa', 'categoria_personale_scolastico', 'categoria_60_69', 'categoria_70_79', 'categoria_over80', 'categoria_soggetti_fragili', 'categoria_forze_armate', 'categoria_altro']].agg('sum')
 
-# get italian population
+# get italian population and mix on df
 pi = pd.read_csv("italian_population.csv")
-pi = pi[pi['sesso'].values=='totale']
-pi.drop('sesso', axis='columns', inplace=True)
+for type in ['totale', 'maschi', 'femmine']:
+    tmp = pi.loc[pi['sesso'].values==type].copy()
+    tmp.drop('sesso', axis='columns', inplace=True)
+    tmp = tmp.rename(columns={"totale_abitanti": f"{type}_abitanti"})
+    df = df.merge(tmp, on="codice_regione_ISTAT")
 
-# mix the 3
-df = df.merge(pi, on="codice_regione_ISTAT")
+# mix the map
 geo_df = italy_regions.merge(df, on="codice_regione_ISTAT").set_index("reg_name")
 
 # generate density
 geo_df["area"] = round(geo_df.area * 10000, 0)
 geo_df["densita"] = round(geo_df.totale_abitanti/geo_df["area"], 0)
-geo_df["perc_vac"] = round((100*geo_df["totale"])/geo_df["totale_abitanti"], 2)
+for field, populationfield in [('totale', 'totale'), ('sesso_maschile', 'maschi'), ('sesso_femminile', 'femmine')]:#, 'prima_dose', 'seconda_dose', 'sesso_maschile', 'sesso_femminile', 'categoria_operatori_sanitari_sociosanitari', 'categoria_personale_non_sanitario', 'categoria_ospiti_rsa', 'categoria_personale_scolastico', 'categoria_60_69', 'categoria_70_79', 'categoria_over80', 'categoria_soggetti_fragili', 'categoria_forze_armate', 'categoria_altro']:
+    geo_df[f"perc_vac_{field}"] = round((100*geo_df[field])/geo_df[f"{populationfield}_abitanti"], 2)
 
 external_stylesheets = [
     { 'href': 'https://cdn.jsdelivr.net/npm/bulma@0.9.2/css/bulma-rtl.min.css',                     'rel': 'stylesheet' },
@@ -55,10 +58,13 @@ app.title = "GeoPandas x Dash"
 
 field2show = [
     {'label': 'Totale', 'value': "totale"},
+    {'label': 'Percentuale Vaccinati Totale', 'value': 'perc_vac_totale'},
+    {'label': 'Sesso Maschile', 'value': "sesso_maschile"},
+    {'label': 'Percentuale Vaccinati Maschi', 'value': 'perc_vac_sesso_maschile'},
+    {'label': 'Sesso Femminile', 'value': "sesso_femminile"},
+    {'label': 'Percentuale Vaccinati Femmine', 'value': 'perc_vac_sesso_femminile'},
     {'label': 'Prima Dose', 'value': "prima_dose"},
     {'label': 'Seconda Dose', 'value': "seconda_dose"},
-    {'label': 'Sesso Maschile', 'value': "sesso_maschile"},
-    {'label': 'Sesso Femminile', 'value': "sesso_femminile"},
     {'label': 'Categoria Operatori Sanitari', 'value': "categoria_operatori_sanitari_sociosanitari"},
     {'label': 'Categoria Personale non Sanitario', 'value': "categoria_personale_non_sanitario"},
     {'label': 'Categoria Ospiti RSA', 'value': "categoria_ospiti_rsa"},
@@ -246,7 +252,7 @@ def loadSlider(field, measure):
     return marks, min, max, value
 
 def diplayMap(field, maxSquareKm, maxDensity):
-    hover_data = list(set(['area', 'totale', 'densita', 'perc_vac', field]))
+    hover_data = list(set(['area', 'totale', 'densita', 'perc_vac_totale', field]))
 
     mask = (geo_df['area'] <= maxSquareKm) & (geo_df['densita'] <= maxDensity)
     tmp = geo_df.loc[mask]
@@ -261,7 +267,7 @@ def diplayMap(field, maxSquareKm, maxDensity):
         opacity=0.5,
         center={"lat": 41.8719, "lon": 12.5694}, zoom=4,
         mapbox_style="carto-positron",
-        labels={'area':'Area', 'densita':'Densità', 'perc_vac': 'Percentuale vaccinati','reg_name': 'Nome regione', 'totale': 'Totale', 'prima_dose': 'Prima dose', 'seconda_dose': 'Seconda dose', 'sesso_maschile': 'Sesso maschile', 'sesso_femminile': 'Sesso femminile', 'categoria_operatori_sanitari_sociosanitari': 'Operatori sanitari', 'categoria_personale_non_sanitario': 'Personale non sanitario', 'categoria_ospiti_rsa': 'Ospiti rsa', 'categoria_personale_scolastico': 'Personale scolastico', 'categoria_60_69': '60/69', 'categoria_over80': 'Over 80', 'categoria_soggetti_fragili': 'Soggetti fragili', 'categoria_forze_armate': 'Forze armate', 'categoria_altro': 'Altro'}
+        labels={'area':'Area', 'densita':'Densità', 'perc_vac_totale': 'Percentuale vaccinati', 'perc_vac_sesso_maschile': 'Percentuale vac. maschi', 'perc_vac_sesso_femminile': 'Percentuale vac. femmine','reg_name': 'Nome regione', 'totale': 'Totale', 'prima_dose': 'Prima dose', 'seconda_dose': 'Seconda dose', 'sesso_maschile': 'Sesso maschile', 'sesso_femminile': 'Sesso femminile', 'categoria_operatori_sanitari_sociosanitari': 'Operatori sanitari', 'categoria_personale_non_sanitario': 'Personale non sanitario', 'categoria_ospiti_rsa': 'Ospiti rsa', 'categoria_personale_scolastico': 'Personale scolastico', 'categoria_60_69': '60/69', 'categoria_over80': 'Over 80', 'categoria_soggetti_fragili': 'Soggetti fragili', 'categoria_forze_armate': 'Forze armate', 'categoria_altro': 'Altro'}
     )
     fig.update_layout(margin=dict(b=0,t=40,l=0,r=0))
 
