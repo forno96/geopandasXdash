@@ -3,7 +3,7 @@
 # https://github.com/openpolis/geojson-italy
 
 # load libs
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import plotly.graph_objects as go
@@ -108,11 +108,11 @@ app.layout = html.Div([
 
                             html.Br(),
                             html.P([html.Span([html.I([], className="fas fa-ruler")], className="icon"), " Max Km square"], className="is-size-6 has-text-grey-light has-text-left"),
-                            dcc.Slider(id = "max_square_km"),
+                            dcc.RangeSlider(id = "range_square_km"),
 
                             html.Br(),
                             html.P([html.Span([html.I([], className="fas fa-users")], className="icon"), " Max Density"], className="is-size-6 has-text-grey-light has-text-left"),
-                            dcc.Slider(id = "max_density")
+                            dcc.RangeSlider(id = "range_density")
                         ])
                     ], className="column is-3", style={"position": "relative"}),
                     html.Div(className="is-divider-vertical px-3"),
@@ -139,8 +139,10 @@ app.layout = html.Div([
                         html.P([_[1]], className="is-size-4 has-text-info has-text-weight-bold", id=_[2])
                     ], className="column")
                     for _ in [
-                        ("Max Km Square",0, "display_max_square_km", "fas fa-ruler"),
-                        ("Max Density of Abitants/Km Square", 0, "display_max_density", "fas fa-users"),
+                        ("Min Km^2", 0, "display_min_square_km", "fas fa-ruler"),
+                        ("Max Km^2", 0, "display_max_square_km", "fas fa-ruler"),
+                        ("Min Ab/Km^2", 0, "display_min_density", "fas fa-users"),
+                        ("Max Ab/Km^2", 0, "display_max_density", "fas fa-users"),
                         ("Total vaccinated", numerize(int(geo_df["totale"].sum())), "", "fas fa-syringe"),
                         ("Percent Vacinnated", f'{round((100*int(geo_df["totale"].sum()))/int(geo_df["totale_abitanti"].sum()), 2)}%', "", "fas fa-percentage"),
                         ("Last update", lasDate, "", "far fa-calendar-alt")
@@ -186,59 +188,61 @@ app.layout = html.Div([
 
 
 @app.callback(
-    Output('max_square_km', 'marks'),
-    Output('max_square_km', 'min'),
-    Output('max_square_km', 'max'),
-    Output('max_square_km', 'value'),
+    Output('range_square_km', 'marks'),
+    Output('range_square_km', 'min'),
+    Output('range_square_km', 'max'),
+    Output('range_square_km', 'value'),
     Input('hidden', 'children')
 )
 def loadMaxSquareKM(hidden):
     return loadSlider("area", "km^2")
-
 @app.callback(
-    Output('max_density', 'marks'),
-    Output('max_density', 'min'),
-    Output('max_density', 'max'),
-    Output('max_density', 'value'),
+    Output('range_density', 'marks'),
+    Output('range_density', 'min'),
+    Output('range_density', 'max'),
+    Output('range_density', 'value'),
     Input('hidden', 'children')
 )
 def loadMaxSquareKM(hidden):
     return loadSlider("densita", "ab/km^2")
 
 @app.callback(
+    Output('display_min_square_km', 'children'),
     Output('display_max_square_km', 'children'),
-    Input('max_square_km', 'value'),
+    Input('range_square_km', 'value'),
     prevent_initial_call=True
 )
 def diplayOnGauge(maxSquareKm):
-    return numerize(maxSquareKm)
-
+    return numerize(maxSquareKm[0]), numerize(maxSquareKm[1])
 @app.callback(
+    Output('display_min_density', 'children'),
     Output('display_max_density', 'children'),
-    Input('max_density', 'value'),
+    Input('range_density', 'value'),
     prevent_initial_call=True
 )
 def diplayOnGauge(maxDensity):
-    return numerize(maxDensity)
+    return numerize(maxDensity[0]), numerize(maxDensity[1])
 
 @app.callback(
     Output('map1', 'figure'),
     Input('field2showMap1', 'value'),
-    Input('max_square_km', 'value'),
-    Input('max_density', 'value'),
+    Input('range_square_km', 'value'),
+    Input('range_density', 'value'),
+    State('field2showMap2', 'value'),
     prevent_initial_call=True
 )
-def displayMap1(field, maxSquareKm, maxDensity):
-    return diplayMap(field, maxSquareKm, maxDensity)
+def displayMap1(field, maxSquareKm, maxDensity, compareField):
+    return diplayMap(field, maxSquareKm[0], maxSquareKm[1], maxDensity[0], maxDensity[1], compareField)
 @app.callback(
     Output('map2', 'figure'),
     Input('field2showMap2', 'value'),
-    Input('max_square_km', 'value'),
-    Input('max_density', 'value'),
+    Input('range_square_km', 'value'),
+    Input('range_density', 'value'),
+    State('field2showMap1', 'value'),
     prevent_initial_call=True
 )
-def displayMap2(field, maxSquareKm, maxDensity):
-    return diplayMap(field, maxSquareKm, maxDensity)
+def displayMap2(field, maxSquareKm, maxDensity, compareField):
+    return diplayMap(field, maxSquareKm[0], maxSquareKm[1], maxDensity[0], maxDensity[1], compareField)
 
 #/km^2
 def loadSlider(field, measure):
@@ -248,13 +252,13 @@ def loadSlider(field, measure):
         min: f"{numerize(min)} {measure}",
         max: f"{numerize(max)} {measure}"
     }
-    value=max
+    value=[min, max]
     return marks, min, max, value
 
-def diplayMap(field, maxSquareKm, maxDensity):
-    hover_data = list(set(['area', 'totale', 'densita', 'perc_vac_totale', field]))
+def diplayMap(field, minSquareKm, maxSquareKm, minDensity, maxDensity, compareField):
+    hover_data = list(set(['area', 'totale', 'densita', 'perc_vac_totale', field, compareField]))
 
-    mask = (geo_df['area'] <= maxSquareKm) & (geo_df['densita'] <= maxDensity)
+    mask = (minSquareKm <= geo_df['area']) & (geo_df['area'] <= maxSquareKm) & (minDensity <= geo_df['densita']) & (geo_df['densita'] <= maxDensity)
     tmp = geo_df.loc[mask]
 
     fig = px.choropleth_mapbox(
@@ -267,7 +271,7 @@ def diplayMap(field, maxSquareKm, maxDensity):
         opacity=0.5,
         center={"lat": 41.8719, "lon": 12.5694}, zoom=4,
         mapbox_style="carto-positron",
-        labels={'area':'Area', 'densita':'Densità', 'perc_vac_totale': 'Percentuale vaccinati', 'perc_vac_sesso_maschile': 'Percentuale vac. maschi', 'perc_vac_sesso_femminile': 'Percentuale vac. femmine','reg_name': 'Nome regione', 'totale': 'Totale', 'prima_dose': 'Prima dose', 'seconda_dose': 'Seconda dose', 'sesso_maschile': 'Sesso maschile', 'sesso_femminile': 'Sesso femminile', 'categoria_operatori_sanitari_sociosanitari': 'Operatori sanitari', 'categoria_personale_non_sanitario': 'Personale non sanitario', 'categoria_ospiti_rsa': 'Ospiti rsa', 'categoria_personale_scolastico': 'Personale scolastico', 'categoria_60_69': '60/69', 'categoria_over80': 'Over 80', 'categoria_soggetti_fragili': 'Soggetti fragili', 'categoria_forze_armate': 'Forze armate', 'categoria_altro': 'Altro'}
+        labels={'area':'Area', 'densita':'Densità', 'perc_vac_totale': 'Percentuale vaccinati', 'perc_vac_sesso_maschile': 'Percentuale vac. maschi', 'perc_vac_sesso_femminile': 'Percentuale vac. femmine','reg_name': 'Regione', 'totale': 'Totale', 'prima_dose': 'Prima dose', 'seconda_dose': 'Seconda dose', 'sesso_maschile': 'Sesso maschile', 'sesso_femminile': 'Sesso femminile', 'categoria_operatori_sanitari_sociosanitari': 'Operatori sanitari', 'categoria_personale_non_sanitario': 'Personale non sanitario', 'categoria_ospiti_rsa': 'Ospiti rsa', 'categoria_personale_scolastico': 'Personale scolastico', 'categoria_60_69': '60/69', 'categoria_over80': 'Over 80', 'categoria_soggetti_fragili': 'Soggetti fragili', 'categoria_forze_armate': 'Forze armate', 'categoria_altro': 'Altro'}
     )
     fig.update_layout(margin=dict(b=0,t=40,l=0,r=0))
 
