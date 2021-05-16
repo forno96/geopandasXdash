@@ -91,7 +91,7 @@ app.layout = html.Div([
                     html.Div([
                         html.Div([
                             html.P([html.Span([html.I([], className="fas fa-clipboard-list")], className="icon has-text-info"), " Selectors"], className="is-size-4 mb-4"),
-                            html.P([html.Span([html.I([], className="fas fa-map")], className="icon has-text-primary"), " Field for Map1"], className="is-size-6 has-text-grey-light has-text-left"),
+                            html.P([html.Span([html.I([], className="fas fa-map")], className="icon has-text-primary"), " Field for Map 1"], className="is-size-6 has-text-grey-light has-text-left"),
                             dcc.Dropdown(
                                 id = 'field2showMap1', clearable=False,
                                 options = field2show,
@@ -99,7 +99,7 @@ app.layout = html.Div([
                             ),
 
                             html.Br(),
-                            html.P([html.Span([html.I([], className="fas fa-map")], className="icon has-text-primary-dark"), " Field for Map2"], className="is-size-6 has-text-grey-light has-text-left"),
+                            html.P([html.Span([html.I([], className="fas fa-map")], className="icon has-text-primary-dark"), " Field for Map 2"], className="is-size-6 has-text-grey-light has-text-left"),
                             dcc.Dropdown(
                                 id = 'field2showMap2', clearable=False,
                                 options = field2show,
@@ -135,14 +135,14 @@ app.layout = html.Div([
                 html.Div(className="is-divider my-3"),
                 html.Div([
                     html.Div([
-                        html.P([html.Span([html.I([], className=_[3])], className="icon"), f" {_[0]}"], className="is-size-7 has-text-grey-light"),
-                        html.P([_[1]], className="is-size-4 has-text-info has-text-weight-bold", id=_[2])
+                        html.P([html.Span([html.I([], className=icon)], className="icon"), f" ", label], className="is-size-7 has-text-grey-light"),
+                        html.P([value], className="is-size-4 has-text-info has-text-weight-bold", id=id)
                     ], className="column")
-                    for _ in [
-                        ("Min Km^2", 0, "display_min_square_km", "fas fa-ruler"),
-                        ("Max Km^2", 0, "display_max_square_km", "fas fa-ruler"),
-                        ("Min Ab/Km^2", 0, "display_min_density", "fas fa-users"),
-                        ("Max Ab/Km^2", 0, "display_max_density", "fas fa-users"),
+                    for label, value, id, icon in [
+                        (u"Max Km\u00B2", 0, "display_min_square_km", "fas fa-ruler"),
+                        (u"Max Km\u00B2", 0, "display_max_square_km", "fas fa-ruler"),
+                        (u"Min Ab/Km \u00B2", 0, "display_min_density", "fas fa-users"),
+                        (u"Max Ab/Km\u00B2", 0, "display_max_density", "fas fa-users"),
                         ("Total vaccinated", numerize(int(geo_df["totale"].sum())), "", "fas fa-syringe"),
                         ("Percent Vacinnated", f'{round((100*int(geo_df["totale"].sum()))/int(geo_df["totale_abitanti"].sum()), 2)}%', "", "fas fa-percentage"),
                         ("Last update", lasDate, "", "far fa-calendar-alt")
@@ -194,8 +194,8 @@ app.layout = html.Div([
     Output('range_square_km', 'value'),
     Input('hidden', 'children')
 )
-def loadMaxSquareKM(hidden):
-    return loadSlider("area", "km^2")
+def loadRangeSquareKM(hidden):
+    return loadSlider("area", u"Km\u00B2")
 @app.callback(
     Output('range_density', 'marks'),
     Output('range_density', 'min'),
@@ -203,8 +203,8 @@ def loadMaxSquareKM(hidden):
     Output('range_density', 'value'),
     Input('hidden', 'children')
 )
-def loadMaxSquareKM(hidden):
-    return loadSlider("densita", "ab/km^2")
+def loadRangeDensity(hidden):
+    return loadSlider("densita", u"Ab/Km\u00B2")
 
 @app.callback(
     Output('display_min_square_km', 'children'),
