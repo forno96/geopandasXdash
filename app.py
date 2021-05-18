@@ -141,7 +141,7 @@ app.layout = html.Div([
                     for label, value, id, icon in [
                         (u"Max Km\u00B2", 0, "display_min_square_km", "fas fa-ruler"),
                         (u"Max Km\u00B2", 0, "display_max_square_km", "fas fa-ruler"),
-                        (u"Min Ab/Km \u00B2", 0, "display_min_density", "fas fa-users"),
+                        (u"Min Ab/Km\u00B2", 0, "display_min_density", "fas fa-users"),
                         (u"Max Ab/Km\u00B2", 0, "display_max_density", "fas fa-users"),
                         ("Total vaccinated", numerize(int(geo_df["totale"].sum())), "", "fas fa-syringe"),
                         ("Percent Vacinnated", f'{round((100*int(geo_df["totale"].sum()))/int(geo_df["totale_abitanti"].sum()), 2)}%', "", "fas fa-percentage"),
@@ -278,4 +278,4 @@ def diplayMap(field, minSquareKm, maxSquareKm, minDensity, maxDensity, compareFi
     return fig
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(host="0.0.0.0", debug=True)
