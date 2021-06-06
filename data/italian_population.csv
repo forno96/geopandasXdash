@@ -1,0 +1,61 @@
+codice_regione_ISTAT,nome_area,sesso,totale_abitanti
+1,Piemonte,femmine,4391610
+1,Piemonte,maschi,4154810
+1,Piemonte,totale,8546420
+2,Valle d'Aosta / Vallée d'Aoste,femmine,253352
+2,Valle d'Aosta / Vallée d'Aoste,maschi,242228
+2,Valle d'Aosta / Vallée d'Aoste,totale,495580
+3,Lombardia,femmine,10169572
+3,Lombardia,maschi,9764412
+3,Lombardia,totale,19933984
+4,Trentino Alto Adige / Südtirol,femmine,1631748
+4,Trentino Alto Adige / Südtirol,maschi,1592602
+4,Trentino Alto Adige / Südtirol,totale,3224350
+5,Veneto,femmine,4949124
+5,Veneto,maschi,4755782
+5,Veneto,totale,9704906
+6,Friuli-Venezia Giulia,femmine,1230946
+6,Friuli-Venezia Giulia,maschi,1166560
+6,Friuli-Venezia Giulia,totale,2397506
+7,Liguria,femmine,1572316
+7,Liguria,maschi,1447294
+7,Liguria,totale,3019610
+8,Emilia-Romagna,femmine,4559874
+8,Emilia-Romagna,maschi,4331224
+8,Emilia-Romagna,totale,8891098
+9,Toscana,femmine,3790236
+9,Toscana,maschi,3546430
+9,Toscana,totale,7336666
+10,Umbria,femmine,894830
+10,Umbria,maschi,835196
+10,Umbria,totale,1730026
+11,Marche,femmine,1541740
+11,Marche,maschi,1461072
+11,Marche,totale,3002812
+12,Lazio,femmine,5918134
+12,Lazio,maschi,5523458
+12,Lazio,totale,11441592
+13,Abruzzo,femmine,1315494
+13,Abruzzo,maschi,1255018
+13,Abruzzo,totale,2570512
+14,Molise,femmine,301202
+14,Molise,maschi,291892
+14,Molise,totale,593094
+15,Campania,femmine,5824304
+15,Campania,maschi,5535214
+15,Campania,totale,11359518
+16,Puglia,femmine,4032630
+16,Puglia,maschi,3821232
+16,Puglia,totale,7853862
+17,Basilicata,femmine,556458
+17,Basilicata,maschi,538700
+17,Basilicata,totale,1095158
+18,Calabria,femmine,1917334
+18,Calabria,maschi,1838122
+18,Calabria,totale,3755456
+19,Sicilia,femmine,4974106
+19,Sicilia,maschi,4707646
+19,Sicilia,totale,9681752
+20,Sardegna,femmine,1627448
+20,Sardegna,maschi,1569002
+20,Sardegna,totale,3196450
