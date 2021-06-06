@@ -10,24 +10,25 @@ import plotly.graph_objects as go
 import plotly.express as px
 import geopandas as gpd
 import pandas as pd
+#import numpy as np
 from numerize.numerize import numerize
 import dash, sys, json, requests
 
 # load geojson
 italy_regions_url = "https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson"
-italy_regions = requests.get(italy_regions_url).json()
-for region in italy_regions['features']:
+italy_geojson = requests.get(italy_regions_url).json()
+for region in italy_geojson['features']:
     region["properties"]['codice_regione_ISTAT'] = region["properties"]['reg_istat_code_num']
-italy_regions = gpd.GeoDataFrame.from_features(italy_regions["features"])
+italy_regions = gpd.GeoDataFrame.from_features(italy_geojson["features"])
 
 # load data
 vaccine_data_url = "https://raw.githubusercontent.com/italia/covid19-opendata-vaccini/master/dati/somministrazioni-vaccini-summary-latest.csv"
 df = pd.read_csv(vaccine_data_url)
 lasDate = df['data_somministrazione'].max()
-df = df.groupby(['codice_regione_ISTAT', 'nome_area'], as_index=False)[['totale', 'sesso_maschile', 'sesso_femminile', 'prima_dose', 'seconda_dose', 'categoria_operatori_sanitari_sociosanitari', 'categoria_personale_non_sanitario', 'categoria_ospiti_rsa', 'categoria_personale_scolastico', 'categoria_60_69', 'categoria_70_79', 'categoria_over80', 'categoria_soggetti_fragili', 'categoria_forze_armate', 'categoria_altro']].agg('sum')
+df = df.groupby(['codice_regione_ISTAT', 'nome_area'], as_index=False)[['totale', 'sesso_maschile', 'sesso_femminile', 'prima_dose', 'seconda_dose']].agg('sum')
 
 # get italian population and mix on df
-pi = pd.read_csv("italian_population.csv")
+pi = pd.read_csv("data/italian_population.csv")
 for type in ['totale', 'maschi', 'femmine']:
     tmp = pi.loc[pi['sesso'].values==type].copy()
     tmp.drop('sesso', axis='columns', inplace=True)
@@ -40,8 +41,11 @@ geo_df = italy_regions.merge(df, on="codice_regione_ISTAT").set_index("reg_name"
 # generate density
 geo_df["area"] = round(geo_df.area * 10000, 0)
 geo_df["densita"] = round(geo_df.totale_abitanti/geo_df["area"], 0)
-for field, populationfield in [('totale', 'totale'), ('sesso_maschile', 'maschi'), ('sesso_femminile', 'femmine')]:#, 'prima_dose', 'seconda_dose', 'sesso_maschile', 'sesso_femminile', 'categoria_operatori_sanitari_sociosanitari', 'categoria_personale_non_sanitario', 'categoria_ospiti_rsa', 'categoria_personale_scolastico', 'categoria_60_69', 'categoria_70_79', 'categoria_over80', 'categoria_soggetti_fragili', 'categoria_forze_armate', 'categoria_altro']:
+for field, populationfield in [('totale', 'totale'), ('sesso_maschile', 'maschi'), ('sesso_femminile', 'femmine'), ('prima_dose', 'totale'), ('seconda_dose', 'totale')]:
     geo_df[f"perc_vac_{field}"] = round((100*geo_df[field])/geo_df[f"{populationfield}_abitanti"], 2)
+
+#geo_df["vctot_on_densita"] = geo_df["totale"]/geo_df["area"]
+#geo_df["vctot_on_densita"] = np.round(np.interp(geo_df["vctot_on_densita"], (geo_df["vctot_on_densita"].min(), geo_df["vctot_on_densita"].max()), (0, 100)), 2)
 
 external_stylesheets = [
     { 'href': 'https://cdn.jsdelivr.net/npm/bulma@0.9.2/css/bulma-rtl.min.css',                     'rel': 'stylesheet' },
@@ -57,24 +61,17 @@ app = dash.Dash(
 app.title = "GeoPandas x Dash"
 
 field2show = [
-    {'label': 'Totale', 'value': "totale"},
     {'label': 'Percentuale Vaccinati Totale', 'value': 'perc_vac_totale'},
-    {'label': 'Sesso Maschile', 'value': "sesso_maschile"},
+    #d{'label': 'Totale Vaccinati su Desità', 'value': 'vctot_on_densita'},
+    {'label': 'Percentuale Vaccinati 1ᵃ dose', 'value': 'perc_vac_prima_dose'},
+    {'label': 'Percentuale Vaccinati 2ᵃ dose', 'value': 'perc_vac_seconda_dose'},
     {'label': 'Percentuale Vaccinati Maschi', 'value': 'perc_vac_sesso_maschile'},
-    {'label': 'Sesso Femminile', 'value': "sesso_femminile"},
     {'label': 'Percentuale Vaccinati Femmine', 'value': 'perc_vac_sesso_femminile'},
+    {'label': 'Totale', 'value': "totale"},
+    {'label': 'Sesso Maschile', 'value': "sesso_maschile"},
+    {'label': 'Sesso Femminile', 'value': "sesso_femminile"},
     {'label': 'Prima Dose', 'value': "prima_dose"},
-    {'label': 'Seconda Dose', 'value': "seconda_dose"},
-    {'label': 'Categoria Operatori Sanitari', 'value': "categoria_operatori_sanitari_sociosanitari"},
-    {'label': 'Categoria Personale non Sanitario', 'value': "categoria_personale_non_sanitario"},
-    {'label': 'Categoria Ospiti RSA', 'value': "categoria_ospiti_rsa"},
-    {'label': 'Categoria Personale Scolastico', 'value': "categoria_personale_scolastico"},
-    {'label': 'Categoria 60/69', 'value': "categoria_60_69"},
-    {'label': 'Categoria 70/79', 'value': "categoria_70_79"},
-    {'label': 'Categoria Over 80', 'value': "categoria_over80"},
-    {'label': 'Categoria Soggetti Fragili', 'value': "categoria_soggetti_fragili"},
-    {'label': 'Categoria Forze Armate', 'value': "categoria_forze_armate"},
-    {'label': 'Categoria Altro', 'value': "categoria_altro"}
+    {'label': 'Seconda Dose', 'value': "seconda_dose"}
 ]
 
 app.layout = html.Div([
@@ -174,17 +171,17 @@ app.layout = html.Div([
     ], className="hero-body"),
     html.Footer([
         html.Div([
-            html.A([html.Span([html.I([], className=_[2])], className="icon"), f" {_[0]}"], href=_[1], className="column")
+            html.A([html.Span([html.I([], className=_[2])], className="icon"), f" {_[0]}"], href=_[1], target="_blank", className="column")
             for _ in [
                 ("Css by Bulma", "https://bulma.io", "fab fa-css3-alt has-text-primary"),
-                ("Icons by FontAwesome", "https://fontawesome.com/", "fab fa-font-awesome has-text-info"),
+                ("Icons by Font Awesome", "https://fontawesome.com/", "fab fa-font-awesome has-text-info"),
                 ("Vaccine data", "https://github.com/italia/covid19-opendata-vaccini", "fas fa-syringe has-text-success"),
                 ("Italy map", "https://github.com/openpolis/geojson-italy", "fas fa-map has-text-warning"),
                 ("People data", "http://dati.istat.it/Index.aspx?DataSetCode=DCIS_POPRES1", "fas fa-users has-text-danger")
             ]
         ], className="content has-text-centered columns is-centered")
     ], className="footer")
-], className="hero is-light is-fullheight")
+], className="hero is-fullheight")
 
 
 @app.callback(
