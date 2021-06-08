@@ -58,7 +58,7 @@ app = dash.Dash(
     __name__,
     external_stylesheets=external_stylesheets
 )
-app.title = "GeoPandas x Dash"
+app.title = "Covid Vaccination Italy"
 
 field2show = [
     {'label': 'Percentuale Vaccinati Totale', 'value': 'perc_vac_totale'},
@@ -78,11 +78,13 @@ app.layout = html.Div([
     html.Div([], className="is-hidden", id="hidden"),
     html.Div([
         html.Div([
+            html.H1(["Covid Vaccination Italy"], className="title is-1 has-text-centered"),
             html.H1([
+                "Made with ",
                 html.A(["Geopandas"], className="has-text-primary", href="https://geopandas.org/index.html", target="_blank"),
                 " X ",
                 html.A(["Dash"], className="has-text-info", href="https://dash.plotly.com/introduction", target="_blank")
-            ], id="title", className="title is-1 has-text-centered"),
+            ], className="subtitle is-1 has-text-centered"),
             html.Div([
                 html.Div([
                     html.Div([
@@ -170,6 +172,8 @@ app.layout = html.Div([
         ], className="container has-text-centered maxWidth")
     ], className="hero-body"),
     html.Footer([
+        html.P(["Made by ", html.A(["@forno96"], href="https://github.com/forno96", target="_blank")], className="has-text-centered"),
+        html.Br(), html.Br(),
         html.Div([
             html.A([html.Span([html.I([], className=_[2])], className="icon"), f" {_[0]}"], href=_[1], target="_blank", className="column")
             for _ in [
